@@ -295,6 +295,21 @@ function App() {
     return `${probability.toFixed(probability >= 10 ? 1 : 2)}%`
   }
 
+  function shuffleCandidates() {
+    const shuffledItems = [...parsedItems]
+
+    for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1))
+      const currentItem = shuffledItems[index]
+
+      shuffledItems[index] = shuffledItems[swapIndex]
+      shuffledItems[swapIndex] = currentItem
+    }
+
+    clearRunState()
+    setListText(shuffledItems.join('\n'))
+  }
+
   function createCandidateEmojiMap(names: string[]) {
     const sortedNames = [...names].sort((left, right) => {
       const hashDiff = getNameHash(left) - getNameHash(right)
@@ -356,7 +371,16 @@ function App() {
           <section className={styles.cardSection}>
             <div className={styles.sectionHeading}>
               <h2>1. Candidates</h2>
-              <span className={styles.countBadge}>{items.length}</span>
+              <button
+                type="button"
+                className={styles.visibilityToggle}
+                onClick={shuffleCandidates}
+                disabled={spinning || parsedItems.length < 2}
+                aria-label="Shuffle candidates"
+                title="Shuffle candidates"
+              >
+                🔀
+              </button>
             </div>
 
             <label className={styles.fieldLabel} htmlFor="candidate-list">
