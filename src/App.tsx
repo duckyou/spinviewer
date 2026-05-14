@@ -23,6 +23,8 @@ import {
 
 const BASE_SPIN_DURATION_MS = 4200
 const ROUND_PAUSE_MS = 900
+const SECRET_POINTER_SWAP_CHANCE = 0.1
+const SECRET_POINTER_SLIDE_MS = 880
 const CELEBRATION_EFFECTS = ['crabs', 'rockets', 'fish', 'sparkles'] as const
 const CANDIDATE_EMOJIS = [
   '🦀', '🐙', '🦑', '🐡', '🦐', '🐳', '🛸', '🚀', '⭐', '🎯', '🎲', '🍀', '🦊', '🐼', '🦁', '🐸', '🐻', '🐨',
@@ -123,6 +125,16 @@ const MONDAY_CELEBRATION_MESSAGES = [
 ] as const
 
 type CelebrationEffect = (typeof CELEBRATION_EFFECTS)[number]
+type Candidate = ReturnType<typeof parseWheelCandidates>[number]
+type TournamentMatch = {
+  left: string
+  right: string | null
+  winner: string | null
+}
+
+type AnimateToItemOptions = {
+  skipFocus?: boolean
+}
 
 function App() {
   const [fallbackItems] = useState(() => pickRandomFallbackItems())
@@ -145,10 +157,16 @@ function App() {
   const [randomSeed] = useState(initialQuery.randomSeed)
   const [speed] = useState(initialQuery.speed)
   const [rotation, setRotation] = useState(0)
+  const [pointerAngle, setPointerAngle] = useState(0)
+  const [pointerSliding, setPointerSliding] = useState(false)
   const [spinning, setSpinning] = useState(false)
   const [focusedItem, setFocusedItem] = useState<string | null>(null)
   const [winner, setWinner] = useState<string | null>(null)
   const [eliminatedItems, setEliminatedItems] = useState<string[]>([])
+  const [tournamentRound, setTournamentRound] = useState(0)
+  const [tournamentMatches, setTournamentMatches] = useState<TournamentMatch[]>([])
+  const [tournamentRoundItems, setTournamentRoundItems] = useState<string[]>([])
+  const [tournamentWheelItems, setTournamentWheelItems] = useState<string[]>([])
   const [celebrationEffect, setCelebrationEffect] = useState<CelebrationEffect>('crabs')
   const [winnerMessage, setWinnerMessage] = useState<string>(celebrationMessages[0])
   const [headerMessage] = useState(() => headerMessages[Math.floor(cryptoRandom() * headerMessages.length)])
@@ -160,6 +178,8 @@ function App() {
   const runIdRef = useRef(0)
   const rotationRef = useRef(0)
   const animationFrameRef = useRef<number | null>(null)
+  const pointerAngleRef = useRef(0)
+  const activeTournamentPairRef = useRef<HTMLDivElement | null>(null)
 
   const parsedItems = parseItemInput(listText)
   const showingFallback = !hasEnoughItems(parsedItems)
@@ -172,7 +192,8 @@ function App() {
   const completedRounds = eliminatedItems.length
   const eliminationRounds = Math.max(items.length - 1, 0)
   const remainingItems = items.filter((item) => !eliminatedItems.includes(item))
-  const wheelItems = mode === 0 ? items : remainingItems
+  const currentTournamentMatch = tournamentMatches.find((match) => match.right !== null && match.winner === null) ?? null
+  const wheelItems = mode === 0 ? items : mode === 1 ? remainingItems : tournamentWheelItems.length >= 2 ? tournamentWheelItems : items
   const probabilityMap = new Map(candidates.map((candidate) => [candidate.name, candidate.weight]))
   const totalCandidateWeight = candidates.reduce((sum, candidate) => sum + candidate.weight, 0)
   const candidateEmojiMap = createCandidateEmojiMap(items)
@@ -205,6 +226,17 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (mode !== 2 || !currentTournamentMatch) {
+      return
+    }
+
+    activeTournamentPairRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    })
+  }, [currentTournamentMatch, mode, tournamentRound])
+
   async function handleSpin() {
     if (spinning) {
       return
@@ -216,7 +248,14 @@ function App() {
     setSpinning(true)
     setWinner(null)
     setFocusedItem(null)
+    setPointerSliding(false)
+    setPointerAngle(0)
+    pointerAngleRef.current = 0
     setEliminatedItems([])
+    setTournamentRound(0)
+    setTournamentMatches([])
+    setTournamentRoundItems([])
+    setTournamentWheelItems([])
     const nextCelebrationEffect = pickCelebrationEffect()
     setCelebrationEffect(nextCelebrationEffect)
     setWinnerMessage(pickCelebrationMessage())
@@ -224,15 +263,101 @@ function App() {
     const random = randomSeed === null ? cryptoRandom : createSeededRandom(randomSeed)
 
     if (mode === 0) {
-      const selected = pickWeightedItem(candidates, random)
-      await animateToItem(selected.name, items, runId, random)
+      const initiallySelected = pickWeightedItem(candidates, random)
+      await animateToItem(initiallySelected.name, items, runId, random)
 
       if (!isCurrentRun(runId)) {
         return
       }
 
-      setWinner(selected.name)
-      setFocusedItem(selected.name)
+      const selectedName = await maybeTriggerSecretPointerSwap(initiallySelected.name, items, runId, random)
+
+      if (!isCurrentRun(runId)) {
+        return
+      }
+
+      setWinner(selectedName)
+      setFocusedItem(selectedName)
+      setSpinning(false)
+      return
+    }
+
+    if (mode === 2) {
+      let activeCandidates = shuffleArray(candidates, random)
+      const nextEliminated: string[] = []
+      let nextRoundNumber = 1
+
+      while (activeCandidates.length > 1) {
+        const roundMatches = createTournamentMatches(activeCandidates)
+        const nextRoundCandidates: Candidate[] = []
+
+        setTournamentRound(nextRoundNumber)
+        setTournamentRoundItems(activeCandidates.map((candidate) => candidate.name))
+        setTournamentMatches(
+          roundMatches.map((match) => ({
+            left: match.left.name,
+            right: match.right?.name ?? null,
+            winner: match.right === null ? match.left.name : null,
+          })),
+        )
+
+        for (const [matchIndex, match] of roundMatches.entries()) {
+          if (match.right === null) {
+            nextRoundCandidates.push(match.left)
+            continue
+          }
+
+          const matchItems = [match.left.name, match.right.name]
+          const initiallySelected = pickWeightedItem([match.left, match.right], random)
+
+          setFocusedItem(null)
+          setTournamentWheelItems(matchItems)
+          const isFinalMatch = roundMatches.length === 1 && nextRoundCandidates.length === 0
+
+          await animateToItem(initiallySelected.name, matchItems, runId, random, {
+            skipFocus: isFinalMatch,
+          })
+
+          if (!isCurrentRun(runId)) {
+            return
+          }
+
+          const selectedName = await maybeTriggerSecretPointerSwap(initiallySelected.name, matchItems, runId, random)
+
+          if (!isCurrentRun(runId)) {
+            return
+          }
+
+          const selected = selectedName === match.left.name ? match.left : match.right
+          const eliminated = selectedName === match.left.name ? match.right.name : match.left.name
+
+          nextEliminated.push(eliminated)
+          nextRoundCandidates.push(selected)
+          setEliminatedItems([...nextEliminated])
+          setTournamentMatches((current) =>
+            current.map((currentMatch, currentIndex) =>
+              currentIndex === matchIndex ? { ...currentMatch, winner: selectedName } : currentMatch,
+            ),
+          )
+
+          if (matchIndex < roundMatches.length - 1 || nextRoundCandidates.length > 1) {
+            await sleep(ROUND_PAUSE_MS)
+          }
+        }
+
+        activeCandidates = nextRoundCandidates
+        nextRoundNumber += 1
+      }
+
+      if (!isCurrentRun(runId)) {
+        return
+      }
+
+      const champion = activeCandidates[0].name
+      setTournamentRoundItems([champion])
+      setTournamentWheelItems([])
+      setFocusedItem(champion)
+      setWinner(champion)
       setSpinning(false)
       return
     }
@@ -241,10 +366,11 @@ function App() {
     const nextEliminated: string[] = []
 
     while (activeCandidates.length > 1) {
-      const selected = pickWeightedItem(activeCandidates, random)
+      const roundItems = activeCandidates.map((candidate) => candidate.name)
+      const initiallySelected = pickWeightedItem(activeCandidates, random)
       await animateToItem(
-        selected.name,
-        activeCandidates.map((candidate) => candidate.name),
+        initiallySelected.name,
+        roundItems,
         runId,
         random,
       )
@@ -252,6 +378,14 @@ function App() {
       if (!isCurrentRun(runId)) {
         return
       }
+
+      const selectedName = await maybeTriggerSecretPointerSwap(initiallySelected.name, roundItems, runId, random)
+
+      if (!isCurrentRun(runId)) {
+        return
+      }
+
+      const selected = activeCandidates.find((candidate) => candidate.name === selectedName) ?? initiallySelected
 
       nextEliminated.push(selected.name)
       activeCandidates = activeCandidates.filter((candidate) => candidate.name !== selected.name)
@@ -272,7 +406,17 @@ function App() {
     setSpinning(false)
   }
 
-  async function animateToItem(targetItem: string, allItems: string[], runId: number, random: () => number) {
+  async function animateToItem(
+    targetItem: string,
+    allItems: string[],
+    runId: number,
+    random: () => number,
+    options: AnimateToItemOptions = {},
+  ) {
+    setPointerSliding(false)
+    setPointerAngle(0)
+    pointerAngleRef.current = 0
+
     const targetIndex = allItems.indexOf(targetItem)
     const slice = 360 / allItems.length
     const safeOffsetRange = slice * 0.28
@@ -293,11 +437,76 @@ function App() {
       return
     }
 
-    setFocusedItem(targetItem)
+    if (!options.skipFocus) {
+      setFocusedItem(targetItem)
+    }
   }
 
   function isCurrentRun(runId: number) {
     return runIdRef.current === runId
+  }
+
+  async function maybeTriggerSecretPointerSwap(
+    selectedItem: string,
+    allItems: string[],
+    runId: number,
+    random: () => number,
+  ) {
+    if (allItems.length < 2 || random() >= SECRET_POINTER_SWAP_CHANCE) {
+      return selectedItem
+    }
+
+    const selectedIndex = allItems.indexOf(selectedItem)
+
+    if (selectedIndex < 0) {
+      return selectedItem
+    }
+
+    const oppositeIndex = (selectedIndex + Math.floor(allItems.length / 2)) % allItems.length
+    const oppositeItem = allItems[oppositeIndex]
+
+    if (!oppositeItem || oppositeItem === selectedItem) {
+      return selectedItem
+    }
+
+    const slice = 360 / allItems.length
+    const pointerTargetAngle = ((oppositeIndex - selectedIndex + allItems.length) % allItems.length) * slice
+
+    await animatePointerToAngle(pointerTargetAngle, runId)
+
+    if (!isCurrentRun(runId)) {
+      return selectedItem
+    }
+
+    setFocusedItem(oppositeItem)
+
+    return oppositeItem
+  }
+
+  function animatePointerToAngle(targetAngle: number, runId: number) {
+    return new Promise<void>((resolve) => {
+      setPointerSliding(true)
+
+      window.requestAnimationFrame(() => {
+        if (!isCurrentRun(runId)) {
+          resolve()
+          return
+        }
+
+        pointerAngleRef.current = targetAngle
+        setPointerAngle(targetAngle)
+
+        window.setTimeout(() => {
+          if (!isCurrentRun(runId)) {
+            resolve()
+            return
+          }
+
+          setPointerSliding(false)
+          resolve()
+        }, SECRET_POINTER_SLIDE_MS)
+      })
+    })
   }
 
   function animateSpin(
@@ -381,7 +590,14 @@ function App() {
   function clearRunState() {
     setFocusedItem(null)
     setWinner(null)
+    setPointerSliding(false)
+    setPointerAngle(0)
+    pointerAngleRef.current = 0
     setEliminatedItems([])
+    setTournamentRound(0)
+    setTournamentMatches([])
+    setTournamentRoundItems([])
+    setTournamentWheelItems([])
   }
 
   function pickCelebrationEffect(): CelebrationEffect {
@@ -445,18 +661,76 @@ function App() {
   const exampleNames = fallbackItems.join(',')
 
   function shuffleCandidates() {
-    const shuffledItems = [...parsedItems]
+    const shuffledItems = shuffleArray(parsedItems, cryptoRandom)
+
+    clearRunState()
+    setListText(shuffledItems.join('\n'))
+  }
+
+  function shuffleArray<T>(sourceItems: T[], random: () => number) {
+    const shuffledItems = [...sourceItems]
 
     for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(cryptoRandom() * (index + 1))
+      const swapIndex = Math.floor(random() * (index + 1))
       const currentItem = shuffledItems[index]
 
       shuffledItems[index] = shuffledItems[swapIndex]
       shuffledItems[swapIndex] = currentItem
     }
 
-    clearRunState()
-    setListText(shuffledItems.join('\n'))
+    return shuffledItems
+  }
+
+  function createTournamentMatches(roundCandidates: Candidate[]) {
+    const roundMatches: Array<{ left: Candidate; right: Candidate | null }> = []
+
+    for (let index = 0; index < roundCandidates.length; index += 2) {
+      roundMatches.push({
+        left: roundCandidates[index],
+        right: roundCandidates[index + 1] ?? null,
+      })
+    }
+
+    return roundMatches
+  }
+
+  const statusHeading = mode === 0 ? 'Winner mode' : mode === 1 ? 'Elimination mode' : 'Tournament mode'
+  const statusTitle =
+    mode === 0
+      ? `${items.length} candidates`
+      : mode === 1
+        ? `${remainingItems.length} remaining`
+        : winner
+          ? 'Champion decided'
+          : tournamentRound > 0
+            ? `Round ${tournamentRound}`
+            : `${items.length} entrants`
+  const statusDetail =
+    mode === 0
+      ? null
+      : mode === 1
+        ? null
+        : winner
+          ? `${winner} cleared the bracket.`
+          : currentTournamentMatch
+            ? `${currentTournamentMatch.left} vs ${currentTournamentMatch.right}`
+            : 'Randomly seeded pairs. Odd brackets get a bye.'
+  const winnerModeLabel = mode === 0 ? 'Winner selected' : mode === 1 ? 'Last one standing' : 'Tournament champion'
+  const visibleStatusItems = mode === 2 && tournamentRoundItems.length > 0 ? tournamentRoundItems : items
+  const tournamentPairGroups: Array<{ key: string; names: string[]; pairColor: string; isActive: boolean; isBye: boolean }> = []
+
+  for (const [index, match] of tournamentMatches.entries()) {
+    const pairColor = CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]
+    const isActive = currentTournamentMatch?.left === match.left || currentTournamentMatch?.right === match.left
+
+    tournamentPairGroups.push({
+      key: `${match.left}-${match.right ?? 'bye'}`,
+      names: match.right ? [match.left, match.right] : [match.left],
+      pairColor,
+      isActive,
+      isBye: match.right === null,
+    })
+
   }
 
   function createCandidateEmojiMap(names: string[]) {
@@ -584,8 +858,10 @@ function App() {
                   setMode(0)
                 }}
                 disabled={spinning}
+                aria-label="Winner mode"
+                title="Winner mode"
               >
-                Winner
+                👑
               </button>
               <button
                 type="button"
@@ -595,8 +871,23 @@ function App() {
                   setMode(1)
                 }}
                 disabled={spinning}
+                aria-label="Elimination mode"
+                title="Elimination mode"
               >
-                Elimination
+                💀
+              </button>
+              <button
+                type="button"
+                className={`${styles.modeButton} ${mode === 2 ? styles.modeButtonActive : ''}`}
+                onClick={() => {
+                  clearRunState()
+                  setMode(2)
+                }}
+                disabled={spinning}
+                aria-label="Tournament mode"
+                title="Tournament mode"
+              >
+                🏆
               </button>
             </div>
           </section>
@@ -616,6 +907,8 @@ function App() {
               eliminatedItems={eliminatedItems}
               focusedItem={focusedItem}
               rotation={rotation}
+              pointerAngle={pointerAngle}
+              pointerSliding={pointerSliding}
             />
           </section>
         </section>
@@ -623,13 +916,12 @@ function App() {
         <aside className={`${styles.panel} ${styles.statusPanel}`}>
           <section className={styles.cardSection}>
             <div className={styles.sectionHeading}>
-              <h2>{mode === 0 ? 'Winner mode' : 'Elimination mode'}</h2>
+              <h2>{statusHeading}</h2>
             </div>
 
             <div className={styles.statusBlock}>
-              <p className={styles.statusTitle}>
-                {mode === 0 ? `${items.length} candidates` : `${remainingItems.length} remaining`}
-              </p>
+              <p className={styles.statusTitle}>{statusTitle}</p>
+              {statusDetail ? <p className={styles.helperText}>{statusDetail}</p> : null}
               <div className={styles.progressRow} aria-hidden="true">
                 {Array.from({ length: Math.max(eliminationRounds, 1) }).map((_, index) => (
                   <span
@@ -658,20 +950,51 @@ function App() {
               </button>
             </div>
 
-            <div className={styles.statusList}>
-              {items.map((name) => (
-                <div key={name} className={styles.statusListRow}>
-                  <span className={styles.roundIndex} style={{ backgroundColor: candidateColorMap.get(name) }}>
-                    {eliminatedItems.includes(name) ? '💀' : candidateEmojiMap.get(name)}
-                  </span>
-                  <span className={eliminatedItems.includes(name) ? styles.eliminatedName : styles.activeName}>{name}</span>
-                  {showProbabilities ? (
-                    <span className={styles.inlineProbability}>
-                      {formatProbability(((probabilityMap.get(name) ?? 0) / totalCandidateWeight) * 100)}
-                    </span>
-                  ) : null}
-                </div>
-              ))}
+            <div className={`${styles.statusList} ${mode === 2 && tournamentPairGroups.length > 0 ? styles.statusListTournament : ''}`}>
+              {mode === 2 && tournamentPairGroups.length > 0
+                ? tournamentPairGroups.map((group) => (
+                    <div
+                      key={group.key}
+                      ref={group.isActive ? activeTournamentPairRef : null}
+                      className={`${styles.tournamentPairGroup} ${group.isActive ? styles.tournamentPairGroupActive : ''}`}
+                      style={{
+                        backgroundColor: `${group.pairColor}14`,
+                        borderColor: `${group.pairColor}44`,
+                        boxShadow: group.isActive ? `inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 0 1px ${group.pairColor}55` : undefined,
+                      }}
+                    >
+                      <div className={styles.tournamentPairHeader}>
+                        <span className={styles.tournamentPairSwatch} style={{ backgroundColor: group.pairColor }} />
+                        <span className={styles.tournamentPairLabel}>{group.isBye ? 'Bye' : 'Matchup'}</span>
+                      </div>
+                      {group.names.map((name) => (
+                        <div key={name} className={`${styles.statusListRow} ${styles.statusListRowCompact}`}>
+                          <span className={styles.roundIndex} style={{ backgroundColor: candidateColorMap.get(name) }}>
+                            {eliminatedItems.includes(name) ? '💀' : candidateEmojiMap.get(name)}
+                          </span>
+                          <span className={eliminatedItems.includes(name) ? styles.eliminatedName : styles.activeName}>{name}</span>
+                          {showProbabilities ? (
+                            <span className={styles.inlineProbability}>
+                              {formatProbability(((probabilityMap.get(name) ?? 0) / totalCandidateWeight) * 100)}
+                            </span>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ))
+                : visibleStatusItems.map((name) => (
+                    <div key={name} className={styles.statusListRow}>
+                      <span className={styles.roundIndex} style={{ backgroundColor: candidateColorMap.get(name) }}>
+                        {eliminatedItems.includes(name) ? '💀' : candidateEmojiMap.get(name)}
+                      </span>
+                      <span className={eliminatedItems.includes(name) ? styles.eliminatedName : styles.activeName}>{name}</span>
+                      {showProbabilities ? (
+                        <span className={styles.inlineProbability}>
+                          {formatProbability(((probabilityMap.get(name) ?? 0) / totalCandidateWeight) * 100)}
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
             </div>
           </section>
         </aside>
@@ -878,7 +1201,7 @@ function App() {
             <div className={styles.winnerBadge} aria-hidden="true">
               🎉
             </div>
-            <p className={styles.winnerModeLabel}>{mode === 0 ? 'Winner selected' : 'Last one standing'}</p>
+            <p className={styles.winnerModeLabel}>{winnerModeLabel}</p>
             <h2 id="winner-title" className={styles.winnerName}>
               {winner}
             </h2>
@@ -927,7 +1250,7 @@ function App() {
               <p className={styles.helpLead}>
                 Use `?q=` followed by semicolon-separated parameters. Example:
                 {' '}
-                <code>{`?q=m:1;l:${exampleWeightedNames};a:1;r:42;s:1.5`}</code>
+                <code>{`?q=m:2;l:${exampleWeightedNames};a:1;r:42;s:1.5`}</code>
               </p>
 
               <div className={styles.helpGrid}>
@@ -939,8 +1262,8 @@ function App() {
 
                 <div className={styles.helpCard}>
                   <h3>`m:` mode</h3>
-                  <p>`0` picks one winner. `1` eliminates names until one remains.</p>
-                  <code>m:1</code>
+                  <p>`0` picks one winner. `1` eliminates until one remains. `2` runs a seeded bracket.</p>
+                  <code>m:2</code>
                 </div>
 
                 <div className={styles.helpCard}>

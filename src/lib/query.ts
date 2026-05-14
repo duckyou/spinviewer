@@ -1,6 +1,6 @@
 import { cryptoRandom } from './wheel'
 
-export type WheelMode = 0 | 1
+export type WheelMode = 0 | 1 | 2
 
 export type WheelQueryState = {
   mode: WheelMode
@@ -51,7 +51,7 @@ export function parseWheelQuery(search: string): Partial<WheelQueryState> {
     }
 
     if (key === 'm') {
-      parsed.mode = value === '1' ? 1 : 0
+      parsed.mode = value === '2' ? 2 : value === '1' ? 1 : 0
       continue
     }
 

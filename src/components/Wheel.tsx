@@ -6,9 +6,11 @@ type WheelProps = {
   eliminatedItems: string[]
   focusedItem: string | null
   rotation: number
+  pointerAngle: number
+  pointerSliding: boolean
 }
 
-export function Wheel({ items, itemColors, eliminatedItems, focusedItem, rotation }: WheelProps) {
+export function Wheel({ items, itemColors, eliminatedItems, focusedItem, rotation, pointerAngle, pointerSliding }: WheelProps) {
   const slice = 360 / items.length
   const maxLength = items.reduce((currentMax, item) => Math.max(currentMax, item.length), 0)
   const compactLabels = items.length >= 8 || maxLength >= 10
@@ -25,8 +27,14 @@ export function Wheel({ items, itemColors, eliminatedItems, focusedItem, rotatio
 
   return (
     <div className={styles.stage}>
-      <div className={styles.pointer} aria-hidden="true">
-        <span className={styles.pointerFacet} />
+      <div
+        className={`${styles.pointerOrbit} ${pointerSliding ? styles.pointerOrbitSliding : ''}`}
+        style={{ transform: `rotate(${pointerAngle}deg)` }}
+        aria-hidden="true"
+      >
+        <div className={styles.pointer}>
+          <span className={styles.pointerFacet} />
+        </div>
       </div>
       <div className={styles.wheelFrame}>
         <div

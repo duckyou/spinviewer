@@ -185,7 +185,7 @@
 }
 
 .modeGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .modeButton,
@@ -273,6 +273,12 @@
   gap: 14px;
 }
 
+.statusListTournament {
+  max-height: min(56vh, 520px);
+  padding-right: 6px;
+  overflow-y: auto;
+}
+
 .visibilityToggle {
   display: inline-grid;
   place-items: center;
@@ -297,6 +303,48 @@
   gap: 12px;
 }
 
+.statusListRowCompact {
+  gap: 10px;
+}
+
+.tournamentPairGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(90, 60, 255, 0.16);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.tournamentPairGroupActive {
+  transform: translateY(-1px);
+}
+
+.tournamentPairHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tournamentPairSwatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.tournamentPairLabel {
+  color: var(--text-h);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .inlineProbability {
   flex-shrink: 0;
   padding: 4px 8px;
@@ -318,6 +366,22 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
   font-size: 24px;
   font-weight: 700;
+}
+
+.statusListRowCompact .roundIndex {
+  width: 30px;
+  height: 30px;
+  font-size: 19px;
+}
+
+.statusListRowCompact .activeName,
+.statusListRowCompact .eliminatedName {
+  font-size: 0.95rem;
+}
+
+.statusListRowCompact .inlineProbability {
+  padding: 3px 7px;
+  font-size: 10px;
 }
 
 .activeName,
