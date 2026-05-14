@@ -23,8 +23,8 @@ import {
 
 const BASE_SPIN_DURATION_MS = 4200
 const ROUND_PAUSE_MS = 900
-const SECRET_POINTER_SWAP_CHANCE = 0.1
-const SECRET_POINTER_SLIDE_MS = 880
+const SECRET_POINTER_SWAP_CHANCE = 0.01
+const SECRET_POINTER_SLIDE_MS = 1660
 const CELEBRATION_EFFECTS = ['crabs', 'rockets', 'fish', 'sparkles'] as const
 const CANDIDATE_EMOJIS = [
   '🦀', '🐙', '🦑', '🐡', '🦐', '🐳', '🛸', '🚀', '⭐', '🎯', '🎲', '🍀', '🦊', '🐼', '🦁', '🐸', '🐻', '🐨',
@@ -909,6 +909,7 @@ function App() {
               rotation={rotation}
               pointerAngle={pointerAngle}
               pointerSliding={pointerSliding}
+              pointerVariant={mode === 1 ? 'gun' : 'default'}
             />
           </section>
         </section>
