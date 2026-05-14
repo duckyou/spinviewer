@@ -1,73 +1,96 @@
-# React + TypeScript + Vite
+# Spinviewer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Spinviewer is a playful wheel app for picking reviewers, losers, survivors, and bracket champions.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Winner mode: pick one winner from the full list.
+- Elimination mode: remove names one by one until one remains.
+- Tournament mode: split candidates into pairs, spin each matchup, and advance winners through the bracket.
+- Weighted entries with `name*weight` syntax.
+- Shareable state through URL query params.
+- Optional seeded randomness for reproducible results.
+- Auto-start support.
+- Secret 1-in-10 pointer fakeout that can swap to the opposite candidate.
 
-## React Compiler
+## Candidate Input
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Enter one candidate per line.
 
-## Expanding the ESLint configuration
+Examples:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+alex
+sam
+jamie*1.5
+taylor
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Rules:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Duplicate names are collapsed.
+- `name*weight` increases or decreases pick chance.
+- At least 2 unique names are required.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Modes
+
+- `👑` Winner: one final winner.
+- `🔫` Elimination: selected candidate is eliminated each round.
+- `🏆` Tournament: seeded head-to-head bracket with byes when needed.
+
+## Query Params
+
+The app stores state in `?q=` using semicolon-separated segments.
+
+Example:
+
+```text
+?q=m:2;l:alex,sam,jamie*1.5,taylor;a:1;r:42;s:1.5
 ```
+
+Supported params:
+
+- `l:` candidate list, comma-separated
+- `m:` mode
+  - `0` winner
+  - `1` elimination
+  - `2` tournament
+- `a:1` auto-start on load
+- `r:` integer random seed
+- `s:` speed multiplier
+
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start dev server:
+
+```bash
+npm run dev
+```
+
+Build production bundle:
+
+```bash
+npm run build
+```
+
+Preview production build:
+
+```bash
+npm run preview
+```
+
+## Stack
+
+- React
+- TypeScript
+- Vite
+
+## Deploy
+
+The app is configured for static deployment from the `dist/` folder.
