@@ -1,0 +1,895 @@
+.appShell {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 32px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.brandMark,
+.winnerBadge {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  color: #fff;
+  background: linear-gradient(135deg, #ff4fc8 0%, #5a3cff 100%);
+  box-shadow: 0 20px 45px rgba(121, 82, 255, 0.25);
+  font-weight: 700;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(280px, 340px);
+  gap: 24px;
+  align-items: start;
+}
+
+.panel {
+  border: 1px solid rgba(137, 124, 196, 0.2);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.sidebarPanel,
+.statusPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.centerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cardSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.countBadge {
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #5a3cff;
+  background: rgba(90, 60, 255, 0.12);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.fieldLabel,
+.helperText,
+.warningText,
+.sectionMeta,
+.emptyState {
+  font-size: 14px;
+}
+
+.listInput {
+  min-height: 280px;
+  padding: 18px;
+  border: 1px solid rgba(137, 124, 196, 0.24);
+  border-radius: 20px;
+  color: var(--text-h);
+  background: rgba(255, 255, 255, 0.94);
+  resize: vertical;
+  font: inherit;
+}
+
+.listInput:focus-visible,
+.modeButton:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible {
+  outline: 2px solid rgba(90, 60, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.sectionMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.helperText {
+  color: #5a3cff;
+}
+
+.warningText {
+  color: #c03d88;
+}
+
+.modeGrid,
+.actionStack {
+  display: grid;
+  gap: 12px;
+}
+
+.modeGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.modeButton,
+.primaryButton,
+.secondaryButton {
+  border-radius: 16px;
+  border: 1px solid rgba(137, 124, 196, 0.18);
+  padding: 16px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modeButton,
+.secondaryButton {
+  color: var(--text-h);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.modeButtonActive,
+.primaryButton {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #5a3cff 0%, #4238ff 100%);
+  box-shadow: 0 18px 32px rgba(90, 60, 255, 0.25);
+}
+
+.modeButton:disabled,
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.listInput:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.smallButton {
+  padding: 14px 18px;
+}
+
+.wheelStage {
+  display: grid;
+  place-items: center;
+  min-height: 640px;
+  padding: 8px 24px 24px;
+}
+
+.statusBlock,
+.remainingBlock,
+.probabilityBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statusTitle,
+.remainingBlock h3,
+.probabilityBlock h3 {
+  color: var(--text-h);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.progressRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.progressDot {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(90, 60, 255, 0.35);
+  border-radius: 50%;
+}
+
+.progressDotComplete {
+  background: #5a3cff;
+  border-color: #5a3cff;
+}
+
+.statusList,
+.remainingList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.visibilityToggle {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(137, 124, 196, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  cursor: pointer;
+}
+
+.visibilityToggle:focus-visible {
+  outline: 2px solid rgba(90, 60, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.statusListRow,
+.remainingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inlineProbability {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #5a3cff;
+  background: rgba(90, 60, 255, 0.12);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.roundIndex,
+.remainingChip {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.activeName,
+.eliminatedName {
+  flex: 1;
+  color: var(--text-h);
+}
+
+.eliminatedName {
+  text-decoration: line-through;
+}
+
+.winnerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(18, 12, 44, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.crabLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rocketLayer,
+.fishLayer,
+.sparkleLayer,
+.balloonLayer,
+.meteorLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.crabSunset,
+.spaceGlow,
+.sparkleGlow,
+.balloonGlow,
+.meteorGlow {
+  position: absolute;
+  inset: 0;
+}
+
+.crabSunset {
+  background:
+    radial-gradient(circle at 30% 82%, rgba(255, 147, 107, 0.18), transparent 22%),
+    linear-gradient(180deg, rgba(255, 136, 173, 0.08), rgba(255, 206, 149, 0.12));
+}
+
+.spaceGlow {
+  background:
+    radial-gradient(circle at 24% 16%, rgba(152, 109, 255, 0.16), transparent 24%),
+    radial-gradient(circle at 74% 28%, rgba(96, 180, 255, 0.14), transparent 20%);
+}
+
+.sparkleGlow {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.16), transparent 34%),
+    radial-gradient(circle at 22% 24%, rgba(255, 119, 215, 0.14), transparent 18%),
+    radial-gradient(circle at 76% 72%, rgba(118, 145, 255, 0.14), transparent 18%);
+}
+
+.balloonGlow {
+  background:
+    radial-gradient(circle at 20% 78%, rgba(255, 115, 194, 0.14), transparent 24%),
+    radial-gradient(circle at 72% 20%, rgba(143, 120, 255, 0.14), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.08));
+}
+
+.meteorGlow {
+  background:
+    radial-gradient(circle at 28% 20%, rgba(96, 180, 255, 0.12), transparent 18%),
+    radial-gradient(circle at 82% 14%, rgba(201, 151, 255, 0.12), transparent 22%),
+    linear-gradient(180deg, rgba(24, 17, 58, 0.08), rgba(65, 48, 140, 0.1));
+}
+
+.spaceStar {
+  position: absolute;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.22));
+}
+
+.shellAccent {
+  position: absolute;
+  display: block;
+  font-size: clamp(0.75rem, 1.4vw, 1rem);
+  opacity: 0.9;
+}
+
+.crabRunner {
+  position: absolute;
+  left: -4rem;
+  animation-name: crabRun;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.crabEmoji {
+  display: block;
+  font-size: clamp(0.9rem, 2vw, 1.4rem);
+  filter: drop-shadow(0 8px 12px rgba(44, 22, 117, 0.18));
+  animation: crabTilt 520ms ease-in-out infinite;
+  transform-origin: 50% 70%;
+}
+
+.rocketRunner {
+  position: absolute;
+  bottom: -3rem;
+  animation-name: rocketRise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.rocketEmoji {
+  display: block;
+  font-size: clamp(0.9rem, 2vw, 1.5rem);
+  filter: drop-shadow(0 10px 14px rgba(44, 22, 117, 0.2));
+  rotate: -48deg;
+}
+
+.ufoRunnerRight,
+.ufoRunnerLeft {
+  position: absolute;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.ufoRunnerRight {
+  left: -5rem;
+  animation-name: ufoCruiseRight;
+}
+
+.ufoRunnerLeft {
+  right: -5rem;
+  animation-name: ufoCruiseLeft;
+}
+
+.ufoEmoji {
+  display: block;
+  font-size: clamp(0.9rem, 2vw, 1.4rem);
+  filter: drop-shadow(0 10px 14px rgba(44, 22, 117, 0.2));
+  animation: ufoTilt 520ms ease-in-out infinite;
+}
+
+.fishRunnerRight,
+.fishRunnerLeft {
+  position: absolute;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.fishRunnerRight {
+  left: -5rem;
+  animation-name: fishSwimRight;
+}
+
+.fishRunnerLeft {
+  right: -5rem;
+  animation-name: fishSwimLeft;
+}
+
+.aquariumGlow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(145, 225, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 78% 32%, rgba(110, 189, 255, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(34, 134, 199, 0.08), rgba(17, 94, 140, 0.16));
+}
+
+.bubbleRunner {
+  position: absolute;
+  bottom: -2rem;
+  animation-name: bubbleRise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.bubbleEmoji {
+  display: block;
+  color: rgba(220, 246, 255, 0.9);
+  font-size: clamp(0.7rem, 1.5vw, 1.1rem);
+  animation: bubbleWobble 900ms ease-in-out infinite;
+}
+
+.fishEmojiRight,
+.fishEmojiLeft {
+  display: block;
+  font-size: clamp(0.9rem, 2vw, 1.35rem);
+  filter: drop-shadow(0 8px 12px rgba(44, 22, 117, 0.16));
+  animation: fishBob 900ms ease-in-out infinite;
+  transform-origin: 50% 60%;
+}
+
+.fishEmojiLeft {
+  transform: scaleX(-1);
+}
+
+.sparkleRunner {
+  position: absolute;
+  animation-name: sparkleFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.sparkleEmoji {
+  display: block;
+  font-size: clamp(0.8rem, 1.8vw, 1.3rem);
+  filter: drop-shadow(0 6px 12px rgba(255, 255, 255, 0.25));
+  animation: sparklePulse 480ms ease-in-out infinite;
+}
+
+.balloonRunner {
+  position: absolute;
+  bottom: -4rem;
+  animation-name: balloonRise;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.balloonEmoji {
+  display: block;
+  font-size: clamp(1rem, 2.2vw, 1.7rem);
+  filter: drop-shadow(0 12px 16px rgba(44, 22, 117, 0.18));
+  animation: balloonSway 900ms ease-in-out infinite;
+}
+
+.meteorRunner {
+  position: absolute;
+  animation-name: meteorFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.meteorEmoji {
+  display: block;
+  font-size: clamp(0.95rem, 2vw, 1.5rem);
+  filter: drop-shadow(0 8px 16px rgba(143, 120, 255, 0.24));
+  rotate: -26deg;
+}
+
+.winnerModal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(100%, 520px);
+  padding: 32px;
+  text-align: center;
+  animation: winnerPop 240ms ease-out;
+}
+
+.winnerModeLabel {
+  color: #5a3cff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.winnerName {
+  color: var(--text-h);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  line-height: 0.95;
+  font-weight: 800;
+}
+
+.winnerMessage {
+  position: relative;
+  overflow: hidden;
+  max-width: 30ch;
+  padding: 14px 16px;
+  border: 1px solid rgba(137, 124, 196, 0.22);
+  border-radius: 20px;
+  color: var(--text-h);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 241, 255, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 14px 30px rgba(44, 22, 117, 0.1);
+  font-size: 1.18rem;
+  line-height: 1.55;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  text-wrap: balance;
+  background-image: linear-gradient(135deg, #4338ff 0%, #8f78ff 40%, #ff4fc8 75%, #4338ff 100%);
+  background-size: 220% 220%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  animation: winnerMessageGlow 2200ms ease-in-out infinite;
+}
+
+.winnerMessage::before {
+  content: '"';
+  position: absolute;
+  top: -12px;
+  left: 14px;
+  color: #8f78ff;
+  font-size: 2.2rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.winnerMessage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.38) 50%, transparent 80%);
+  transform: translateX(-130%);
+  animation: winnerMessageShine 2600ms ease-in-out infinite;
+  pointer-events: none;
+}
+
+.winnerActions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+@keyframes winnerPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes winnerMessageGlow {
+  0% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 0 rgba(143, 120, 255, 0));
+  }
+
+  50% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 4px 10px rgba(143, 120, 255, 0.18));
+  }
+
+  100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 0 rgba(143, 120, 255, 0));
+  }
+}
+
+@keyframes winnerMessageShine {
+  0% {
+    transform: translateX(-130%);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  60% {
+    transform: translateX(130%);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
+}
+
+@keyframes crabRun {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  25% {
+    transform: translate3d(28vw, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(56vw, 0, 0);
+  }
+
+  75% {
+    transform: translate3d(84vw, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(calc(100vw + 8rem), 0, 0);
+  }
+}
+
+@keyframes crabTilt {
+  0% {
+    rotate: -12deg;
+  }
+
+  50% {
+    rotate: 12deg;
+  }
+
+  100% {
+    rotate: -12deg;
+  }
+}
+
+@keyframes rocketRise {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(0, -115vh, 0);
+  }
+}
+
+@keyframes ufoCruiseRight {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(calc(100vw + 10rem), 0, 0);
+  }
+}
+
+@keyframes ufoCruiseLeft {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(calc(-100vw - 10rem), 0, 0);
+  }
+}
+
+@keyframes ufoTilt {
+  0% {
+    rotate: -8deg;
+  }
+
+  50% {
+    rotate: 8deg;
+  }
+
+  100% {
+    rotate: -8deg;
+  }
+}
+
+@keyframes bubbleRise {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(0, -105vh, 0);
+  }
+}
+
+@keyframes bubbleWobble {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0.35rem, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-0.2rem, 0, 0);
+  }
+}
+
+@keyframes fishSwimRight {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(calc(100vw + 10rem), 0, 0);
+  }
+}
+
+@keyframes fishSwimLeft {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(calc(-100vw - 10rem), 0, 0);
+  }
+}
+
+@keyframes fishBob {
+  0% {
+    rotate: -10deg;
+    translate: 0 0;
+  }
+
+  50% {
+    rotate: 10deg;
+    translate: 0 -0.3rem;
+  }
+
+  100% {
+    rotate: -10deg;
+    translate: 0 0;
+  }
+}
+
+@keyframes sparkleFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.9);
+  }
+
+  50% {
+    transform: translate3d(0.6rem, -0.8rem, 0) scale(1.05);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.9);
+  }
+}
+
+@keyframes sparklePulse {
+  0% {
+    opacity: 0.5;
+    rotate: -6deg;
+  }
+
+  50% {
+    opacity: 1;
+    rotate: 6deg;
+  }
+
+  100% {
+    opacity: 0.5;
+    rotate: -6deg;
+  }
+}
+
+@keyframes balloonRise {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(0, -120vh, 0);
+  }
+}
+
+@keyframes balloonSway {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-8deg);
+  }
+
+  50% {
+    transform: translate3d(0.35rem, -0.3rem, 0) rotate(8deg);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-8deg);
+  }
+}
+
+@keyframes meteorFall {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate3d(-34vw, 60vh, 0);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1180px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .wheelStage {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 720px) {
+  .appShell {
+    gap: 24px;
+    padding: 20px;
+  }
+
+  .topbar,
+  .winnerActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modeGrid {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .winnerModal {
+    padding: 28px 20px;
+  }
+
+  .wheelStage {
+    min-height: 360px;
+    padding: 8px;
+  }
+}
