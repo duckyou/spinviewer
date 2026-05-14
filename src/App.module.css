@@ -19,8 +19,15 @@
   flex-shrink: 0;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .helpButton,
-.helpCloseButton {
+.helpCloseButton,
+.githubButton {
   display: inline-grid;
   place-items: center;
   border: 1px solid rgba(137, 124, 196, 0.18);
@@ -38,6 +45,19 @@
   font-weight: 700;
 }
 
+.githubButton {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 16px;
+  text-decoration: none;
+}
+
+.githubIcon {
+  width: 22px;
+  height: 22px;
+}
+
 .helpCloseButton {
   width: 40px;
   height: 40px;
@@ -47,7 +67,8 @@
 }
 
 .helpButton:focus-visible,
-.helpCloseButton:focus-visible {
+.helpCloseButton:focus-visible,
+.githubButton:focus-visible {
   outline: 2px solid rgba(90, 60, 255, 0.45);
   outline-offset: 2px;
 }
@@ -370,6 +391,183 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.randomPreviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(137, 124, 196, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.randomPreviewSpoiler {
+  width: 100%;
+}
+
+.randomPreviewSummary {
+  cursor: pointer;
+  color: var(--text-h);
+  font-size: 1rem;
+  font-weight: 700;
+  list-style: none;
+}
+
+.randomPreviewSummary::-webkit-details-marker {
+  display: none;
+}
+
+.randomPreviewSummary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 8px;
+  color: #8f78ff;
+  font-size: 0.78em;
+  transition: transform 160ms ease;
+}
+
+.randomPreviewSpoiler[open] .randomPreviewSummary::before {
+  transform: rotate(90deg);
+}
+
+.randomPreviewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.randomPreviewHeader p {
+  color: var(--text);
+}
+
+.randomPreviewHeader code {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 10px;
+  color: #4338ff;
+  background: rgba(90, 60, 255, 0.08);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.randomPreviewActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.randomPreviewRefresh {
+  border: 1px solid rgba(137, 124, 196, 0.18);
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: var(--text-h);
+  background: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.randomPreviewRefresh:focus-visible {
+  outline: 2px solid rgba(90, 60, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.randomPreviewChart {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.randomPreviewStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.randomPreviewStats span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--text-h);
+  background: rgba(90, 60, 255, 0.08);
+  font-size: 12px;
+}
+
+.randomPreviewYAxis {
+  display: grid;
+  width: 36px;
+  padding: 6px 0;
+  align-content: space-between;
+  justify-items: end;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.randomPreviewCanvas {
+  position: relative;
+  min-height: 180px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 241, 255, 0.65));
+}
+
+.randomPreviewGrid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+}
+
+.randomPreviewGrid span {
+  border-top: 1px dashed rgba(90, 60, 255, 0.16);
+}
+
+.randomPreviewSvg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 180px;
+}
+
+.randomPreviewArea {
+  fill: rgba(143, 120, 255, 0.18);
+}
+
+.randomPreviewLine {
+  fill: none;
+  stroke: #6d4bff;
+  stroke-width: 6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.randomPreviewDot {
+  fill: #ff4fc8;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 2;
+}
+
+.randomPreviewXAxis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-left: 46px;
+  color: var(--text);
+  font-size: 10px;
+}
+
+.randomPreviewXAxis span:nth-child(3) {
+  text-align: center;
+}
+
+.randomPreviewXAxis span:last-child {
+  text-align: right;
 }
 
 .helpCard {
@@ -985,8 +1183,40 @@
     align-items: stretch;
   }
 
+  .headerActions {
+    width: 100%;
+  }
+
+  .githubButton,
+  .helpButton {
+    width: 100%;
+  }
+
   .helpGrid {
     grid-template-columns: 1fr;
+  }
+
+  .randomPreviewHeader {
+    flex-direction: column;
+  }
+
+  .randomPreviewActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .randomPreviewChart {
+    gap: 8px;
+  }
+
+  .randomPreviewXAxis {
+    margin-left: 40px;
+    font-size: 9px;
+  }
+
+  .randomPreviewYAxis {
+    width: 30px;
+    font-size: 9px;
   }
 
   .modeGrid {

@@ -1,3 +1,5 @@
+import { cryptoRandom } from './wheel'
+
 export type WheelMode = 0 | 1
 
 export type WheelQueryState = {
@@ -16,8 +18,18 @@ export type WheelCandidate = {
 
 const DEFAULT_MODE: WheelMode = 0
 const DEFAULT_SPEED = 1
-export const FALLBACK_ITEMS = ['alice', 'bob', 'carol', 'dave']
+export const FALLBACK_ITEM_GROUPS = [
+  ['michael', 'dwight', 'jim', 'pam'],
+  ['richard', 'dinesh', 'gilfoyle', 'jared'],
+  ['roy', 'moss', 'jen', 'richmond'],
+] as const
 const MINIMUM_ITEMS = 2
+
+export function pickRandomFallbackItems(random = cryptoRandom): string[] {
+  const group = FALLBACK_ITEM_GROUPS[Math.floor(random() * FALLBACK_ITEM_GROUPS.length)]
+
+  return [...group]
+}
 
 export function parseWheelQuery(search: string): Partial<WheelQueryState> {
   const params = new URLSearchParams(search)
@@ -79,13 +91,13 @@ export function parseWheelQuery(search: string): Partial<WheelQueryState> {
   return parsed
 }
 
-export function resolveWheelQuery(search: string): WheelQueryState {
+export function resolveWheelQuery(search: string, fallbackItems = pickRandomFallbackItems()): WheelQueryState {
   const parsed = parseWheelQuery(search)
   const items = normalizeWheelItems(parsed.items ?? [])
 
   return {
     mode: parsed.mode ?? DEFAULT_MODE,
-    items: items.length >= MINIMUM_ITEMS ? items : FALLBACK_ITEMS,
+    items: items.length >= MINIMUM_ITEMS ? items : fallbackItems,
     autoStart: parsed.autoStart ?? false,
     randomSeed: parsed.randomSeed ?? null,
     speed: parsed.speed ?? DEFAULT_SPEED,

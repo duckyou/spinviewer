@@ -6,11 +6,9 @@ type WheelProps = {
   eliminatedItems: string[]
   focusedItem: string | null
   rotation: number
-  spinning: boolean
-  spinDurationMs: number
 }
 
-export function Wheel({ items, itemColors, eliminatedItems, focusedItem, rotation, spinning, spinDurationMs }: WheelProps) {
+export function Wheel({ items, itemColors, eliminatedItems, focusedItem, rotation }: WheelProps) {
   const slice = 360 / items.length
   const maxLength = items.reduce((currentMax, item) => Math.max(currentMax, item.length), 0)
   const compactLabels = items.length >= 8 || maxLength >= 10
@@ -27,14 +25,15 @@ export function Wheel({ items, itemColors, eliminatedItems, focusedItem, rotatio
 
   return (
     <div className={styles.stage}>
-      <div className={styles.pointer} aria-hidden="true" />
+      <div className={styles.pointer} aria-hidden="true">
+        <span className={styles.pointerFacet} />
+      </div>
       <div className={styles.wheelFrame}>
         <div
           className={styles.wheel}
           style={{
             backgroundImage: `conic-gradient(from 0deg, ${conicStops})`,
             transform: `rotate(${rotation}deg)`,
-            transitionDuration: spinning ? `${spinDurationMs}ms` : '0ms',
           }}
         >
           <div className={styles.rim} aria-hidden="true" />

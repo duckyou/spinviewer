@@ -1,16 +1,25 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import githubIcon from './assets/github.svg'
 import { Wheel } from './components/Wheel'
 import styles from './App.module.css'
 import {
-  FALLBACK_ITEMS,
   hasEnoughItems,
   parseItemInput,
   parseWheelCandidates,
+  pickRandomFallbackItems,
   resolveWheelQuery,
   serializeWheelQuery,
   type WheelMode,
 } from './lib/query'
-import { computeSpinRotation, createSeededRandom, pickWeightedItem, sleep } from './lib/wheel'
+import {
+  computeSpinDistanceAtTime,
+  computeSpinRotation,
+  createSeededRandom,
+  createSpinPhysicsProfile,
+  cryptoRandom,
+  pickWeightedItem,
+  sleep,
+} from './lib/wheel'
 
 const BASE_SPIN_DURATION_MS = 4200
 const ROUND_PAUSE_MS = 900
@@ -116,6 +125,7 @@ const MONDAY_CELEBRATION_MESSAGES = [
 type CelebrationEffect = (typeof CELEBRATION_EFFECTS)[number]
 
 function App() {
+  const [fallbackItems] = useState(() => pickRandomFallbackItems())
   const isFriday = new Date().getDay() === 5
   const isMonday = new Date().getDay() === 1
   const headerMessages = isFriday
@@ -128,7 +138,7 @@ function App() {
     : isMonday
       ? [...CELEBRATION_MESSAGES, ...MONDAY_CELEBRATION_MESSAGES, ...MONDAY_CELEBRATION_MESSAGES]
       : CELEBRATION_MESSAGES
-  const initialQuery = resolveWheelQuery(window.location.search)
+  const initialQuery = resolveWheelQuery(window.location.search, fallbackItems)
   const [listText, setListText] = useState(initialQuery.items.join('\n'))
   const [mode, setMode] = useState<WheelMode>(initialQuery.mode)
   const [autoStart] = useState(initialQuery.autoStart)
@@ -141,17 +151,19 @@ function App() {
   const [eliminatedItems, setEliminatedItems] = useState<string[]>([])
   const [celebrationEffect, setCelebrationEffect] = useState<CelebrationEffect>('crabs')
   const [winnerMessage, setWinnerMessage] = useState<string>(celebrationMessages[0])
-  const [headerMessage] = useState(() => headerMessages[Math.floor(Math.random() * headerMessages.length)])
+  const [headerMessage] = useState(() => headerMessages[Math.floor(cryptoRandom() * headerMessages.length)])
   const [showProbabilities, setShowProbabilities] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [randomPreview, setRandomPreview] = useState(() => createRandomPreview())
 
   const autoStartedRef = useRef(false)
   const runIdRef = useRef(0)
   const rotationRef = useRef(0)
+  const animationFrameRef = useRef<number | null>(null)
 
   const parsedItems = parseItemInput(listText)
   const showingFallback = !hasEnoughItems(parsedItems)
-  const sourceItems = showingFallback ? FALLBACK_ITEMS : parsedItems
+  const sourceItems = showingFallback ? fallbackItems : parsedItems
   const candidates = parseWheelCandidates(sourceItems)
   const items = candidates.map((candidate) => candidate.name)
   const normalizedSpeed = Math.max(speed, 0.1)
@@ -185,6 +197,14 @@ function App() {
     void startSpin()
   }, [autoStart])
 
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [])
+
   async function handleSpin() {
     if (spinning) {
       return
@@ -201,7 +221,7 @@ function App() {
     setCelebrationEffect(nextCelebrationEffect)
     setWinnerMessage(pickCelebrationMessage())
 
-    const random = randomSeed === null ? Math.random : createSeededRandom(randomSeed)
+    const random = randomSeed === null ? cryptoRandom : createSeededRandom(randomSeed)
 
     if (mode === 0) {
       const selected = pickWeightedItem(candidates, random)
@@ -258,12 +278,15 @@ function App() {
     const safeOffsetRange = slice * 0.28
     const sliceOffset = (random() * 2 - 1) * safeOffsetRange
     const extraTurns = 5 + Math.floor(random() * 3)
-    const nextRotation = computeSpinRotation(rotationRef.current, targetIndex, allItems.length, extraTurns, sliceOffset)
+    const startRotation = rotationRef.current
+    const nextRotation = computeSpinRotation(startRotation, targetIndex, allItems.length, extraTurns, sliceOffset)
+    const driftDistance = Math.min(5.5, Math.max(1.8, slice * 0.075))
+    const driftDurationMs = Math.min(840, Math.max(440, Math.round(spinDurationMs * 0.28)))
+    const overshootRotation = nextRotation + driftDistance
+    const totalDistance = overshootRotation - startRotation
+    const physicsProfile = createSpinPhysicsProfile(totalDistance, spinDurationMs - driftDurationMs, 0.85 + random() * 0.4)
 
-    rotationRef.current = nextRotation
-    setRotation(nextRotation)
-
-    await sleep(spinDurationMs)
+    await animateSpin(startRotation, overshootRotation, physicsProfile, runId, nextRotation, driftDurationMs)
 
     if (!isCurrentRun(runId)) {
       setSpinning(false)
@@ -277,6 +300,84 @@ function App() {
     return runIdRef.current === runId
   }
 
+  function animateSpin(
+    startRotation: number,
+    targetRotation: number,
+    physicsProfile: ReturnType<typeof createSpinPhysicsProfile>,
+    runId: number,
+    finalRotation = targetRotation,
+    driftDurationMs = 0,
+  ) {
+    return new Promise<void>((resolve) => {
+      const startedAt = performance.now()
+      const totalDurationMs = physicsProfile.accelerationMs + physicsProfile.cruiseMs + physicsProfile.decelerationMs
+
+      const step = (timestamp: number) => {
+        if (!isCurrentRun(runId)) {
+          if (animationFrameRef.current !== null) {
+            window.cancelAnimationFrame(animationFrameRef.current)
+            animationFrameRef.current = null
+          }
+
+          resolve()
+          return
+        }
+
+        const elapsedMs = Math.min(timestamp - startedAt, totalDurationMs)
+        const traveledDistance = computeSpinDistanceAtTime(elapsedMs, physicsProfile)
+        const nextFrameRotation = Math.min(startRotation + traveledDistance, targetRotation)
+
+        rotationRef.current = nextFrameRotation
+        setRotation(nextFrameRotation)
+
+        if (elapsedMs >= totalDurationMs) {
+          if (driftDurationMs <= 0 || finalRotation === targetRotation) {
+            rotationRef.current = finalRotation
+            setRotation(finalRotation)
+            animationFrameRef.current = null
+            resolve()
+            return
+          }
+
+          const driftStartedAt = timestamp
+
+          const driftStep = (driftTimestamp: number) => {
+            if (!isCurrentRun(runId)) {
+              animationFrameRef.current = null
+              resolve()
+              return
+            }
+
+            const driftElapsedMs = Math.min(driftTimestamp - driftStartedAt, driftDurationMs)
+            const progress = driftElapsedMs / driftDurationMs
+            const easedProgress = 1 - Math.pow(1 - progress, 3)
+            const driftRotation = targetRotation + (finalRotation - targetRotation) * easedProgress
+
+            rotationRef.current = driftRotation
+            setRotation(driftRotation)
+
+            if (driftElapsedMs >= driftDurationMs) {
+              rotationRef.current = finalRotation
+              setRotation(finalRotation)
+              animationFrameRef.current = null
+              resolve()
+              return
+            }
+
+            animationFrameRef.current = window.requestAnimationFrame(driftStep)
+          }
+
+          animationFrameRef.current = window.requestAnimationFrame(driftStep)
+          return
+        }
+
+        animationFrameRef.current = window.requestAnimationFrame(step)
+      }
+
+      animationFrameRef.current = window.requestAnimationFrame(step)
+    })
+  }
+
   function clearRunState() {
     setFocusedItem(null)
     setWinner(null)
@@ -284,22 +385,70 @@ function App() {
   }
 
   function pickCelebrationEffect(): CelebrationEffect {
-    return CELEBRATION_EFFECTS[Math.floor(Math.random() * CELEBRATION_EFFECTS.length)]
+    return CELEBRATION_EFFECTS[Math.floor(cryptoRandom() * CELEBRATION_EFFECTS.length)]
   }
 
   function pickCelebrationMessage(): string {
-    return celebrationMessages[Math.floor(Math.random() * celebrationMessages.length)]
+    return celebrationMessages[Math.floor(cryptoRandom() * celebrationMessages.length)]
   }
 
   function formatProbability(probability: number) {
     return `${probability.toFixed(probability >= 10 ? 1 : 2)}%`
   }
 
+  function createRandomPreview() {
+    const bucketCount = 64
+    const sampleCount = 16000
+    const buckets = Array.from({ length: bucketCount }, () => 0)
+
+    for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+      const value = cryptoRandom()
+      const bucketIndex = Math.min(Math.floor(value * bucketCount), bucketCount - 1)
+
+      buckets[bucketIndex] += 1
+    }
+
+    const maxCount = Math.max(...buckets)
+    const minCount = Math.min(...buckets)
+    const averageCount = Math.round(sampleCount / bucketCount)
+    const chartWidth = 1000
+    const chartHeight = 180
+    const linePoints = buckets.map((count, index) => {
+      const x = (index / (bucketCount - 1)) * chartWidth
+      const y = chartHeight - (maxCount > 0 ? (count / maxCount) * chartHeight : 0)
+
+      return `${x},${y}`
+    })
+    const areaPath = `M 0 ${chartHeight} L ${linePoints.join(' L ')} L ${chartWidth} ${chartHeight} Z`
+
+    return {
+      sampleCount,
+      bucketCount,
+      minCount,
+      maxCount,
+      averageCount,
+      linePoints: linePoints.join(' '),
+      areaPath,
+      markers: buckets.map((count, index) => ({
+        x: (index / (bucketCount - 1)) * chartWidth,
+        y: chartHeight - (maxCount > 0 ? (count / maxCount) * chartHeight : 0),
+        count,
+      })),
+    }
+  }
+
+  const exampleWeightedNames = [
+    `${fallbackItems[1] ?? fallbackItems[0]}*1.2`,
+    fallbackItems[2] ?? fallbackItems[0],
+    fallbackItems[3] ?? fallbackItems[1] ?? fallbackItems[0],
+  ].join(',')
+  const exampleNames = fallbackItems.join(',')
+
   function shuffleCandidates() {
     const shuffledItems = [...parsedItems]
 
     for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1))
+      const swapIndex = Math.floor(cryptoRandom() * (index + 1))
       const currentItem = shuffledItems[index]
 
       shuffledItems[index] = shuffledItems[swapIndex]
@@ -353,17 +502,30 @@ function App() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className={styles.helpButton}
-          onClick={() => {
-            setShowHelp(true)
-          }}
-          aria-label="Open query parameter help"
-          title="Query parameter help"
-        >
-          ?
-        </button>
+        <div className={styles.headerActions}>
+          <a
+            className={styles.githubButton}
+            href="https://github.com/duckyou/spinviewer"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open GitHub repository"
+            title="Open GitHub repository"
+          >
+            <img className={styles.githubIcon} src={githubIcon} alt="" aria-hidden="true" />
+          </a>
+
+          <button
+            type="button"
+            className={styles.helpButton}
+            onClick={() => {
+              setShowHelp(true)
+            }}
+            aria-label="Open query parameter help"
+            title="Query parameter help"
+          >
+            ?
+          </button>
+        </div>
       </header>
 
       <main className={styles.dashboard}>
@@ -454,8 +616,6 @@ function App() {
               eliminatedItems={eliminatedItems}
               focusedItem={focusedItem}
               rotation={rotation}
-              spinning={spinning}
-              spinDurationMs={spinDurationMs}
             />
           </section>
         </section>
@@ -767,14 +927,14 @@ function App() {
               <p className={styles.helpLead}>
                 Use `?q=` followed by semicolon-separated parameters. Example:
                 {' '}
-                <code>?q=m:1;l:alice*1.2,bob,carol;a:1;r:42;s:1.5</code>
+                <code>{`?q=m:1;l:${exampleWeightedNames};a:1;r:42;s:1.5`}</code>
               </p>
 
               <div className={styles.helpGrid}>
                 <div className={styles.helpCard}>
                   <h3>`l:` candidate list</h3>
                   <p>Comma-separated names. Use it to preload the wheel from a link.</p>
-                  <code>l:alice,bob,carol</code>
+                  <code>{`l:${exampleNames}`}</code>
                 </div>
 
                 <div className={styles.helpCard}>
@@ -804,11 +964,74 @@ function App() {
                 <div className={styles.helpCard}>
                   <h3>`name*rate` weights</h3>
                   <p>Boost or reduce a candidate chance by adding a rate after the name.</p>
-                  <code>alice*1.2,bob,carol</code>
+                  <code>{exampleWeightedNames}</code>
                 </div>
               </div>
 
               <p className={styles.helpNote}>Parameters are separated with `;`. Candidate names inside `l:` are separated with `,`.</p>
+
+              <details className={styles.randomPreviewSpoiler}>
+                <summary className={styles.randomPreviewSummary}>Crypto random distribution</summary>
+                <div className={styles.randomPreviewCard}>
+                  <div className={styles.randomPreviewHeader}>
+                    <p>Sampled from the app&apos;s default non-seeded random generator.</p>
+                    <div className={styles.randomPreviewActions}>
+                      <code>{`${randomPreview.sampleCount} samples`}</code>
+                      <button
+                        type="button"
+                        className={styles.randomPreviewRefresh}
+                        onClick={() => {
+                          setRandomPreview(createRandomPreview())
+                        }}
+                        aria-label="Refresh distribution graph"
+                        title="Refresh distribution graph"
+                      >
+                        🔄
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.randomPreviewStats}>
+                    <span><strong>Min</strong> {randomPreview.minCount}</span>
+                    <span><strong>Avg</strong> {randomPreview.averageCount}</span>
+                    <span><strong>Max</strong> {randomPreview.maxCount}</span>
+                    <span><strong>Bins</strong> {randomPreview.bucketCount}</span>
+                  </div>
+
+                  <div className={styles.randomPreviewChart} aria-hidden="true">
+                    <div className={styles.randomPreviewYAxis}>
+                      <span>{randomPreview.maxCount}</span>
+                      <span>{Math.round(randomPreview.maxCount * 0.66)}</span>
+                      <span>{Math.round(randomPreview.maxCount * 0.33)}</span>
+                      <span>0</span>
+                    </div>
+
+                    <div className={styles.randomPreviewCanvas}>
+                      <div className={styles.randomPreviewGrid}>
+                        <span />
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <svg className={styles.randomPreviewSvg} viewBox="0 0 1000 180" preserveAspectRatio="none">
+                        <path className={styles.randomPreviewArea} d={randomPreview.areaPath} />
+                        <polyline className={styles.randomPreviewLine} points={randomPreview.linePoints} />
+                        {randomPreview.markers.filter((_, index) => index % 4 === 0).map((marker, index) => (
+                          <circle key={index} className={styles.randomPreviewDot} cx={marker.x} cy={marker.y} r="4" />
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className={styles.randomPreviewXAxis}>
+                    <span>0.00</span>
+                    <span>0.25</span>
+                    <span>0.50</span>
+                    <span>0.75</span>
+                    <span>1.00</span>
+                  </div>
+                </div>
+              </details>
             </div>
           </section>
         </div>
