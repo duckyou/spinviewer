@@ -143,6 +143,7 @@ function App() {
   const [winnerMessage, setWinnerMessage] = useState<string>(celebrationMessages[0])
   const [headerMessage] = useState(() => headerMessages[Math.floor(Math.random() * headerMessages.length)])
   const [showProbabilities, setShowProbabilities] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
 
   const autoStartedRef = useRef(false)
   const runIdRef = useRef(0)
@@ -336,6 +337,18 @@ function App() {
             <p>{headerMessage}</p>
           </div>
         </div>
+
+        <button
+          type="button"
+          className={styles.helpButton}
+          onClick={() => {
+            setShowHelp(true)
+          }}
+          aria-label="Open query parameter help"
+          title="Query parameter help"
+        >
+          ?
+        </button>
       </header>
 
       <main className={styles.dashboard}>
@@ -693,6 +706,85 @@ function App() {
               <button type="button" className={styles.primaryButton} onClick={() => void handleSpin()}>
                 Spin again
               </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {showHelp ? (
+        <div className={styles.helpOverlay} role="presentation" onClick={() => setShowHelp(false)}>
+          <section
+            className={`${styles.panel} ${styles.helpModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="query-help-title"
+            onClick={(event) => {
+              event.stopPropagation()
+            }}
+          >
+            <div className={styles.helpHeader}>
+              <div>
+                <p className={styles.helpEyebrow}>Query Help</p>
+                <h2 id="query-help-title">URL parameters</h2>
+              </div>
+              <button
+                type="button"
+                className={styles.helpCloseButton}
+                onClick={() => {
+                  setShowHelp(false)
+                }}
+                aria-label="Close query help"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.helpBody}>
+              <p className={styles.helpLead}>
+                Use `?q=` followed by semicolon-separated parameters. Example:
+                {' '}
+                <code>?q=m:1;l:alice*1.2,bob,carol;a:1;r:42;s:1.5</code>
+              </p>
+
+              <div className={styles.helpGrid}>
+                <div className={styles.helpCard}>
+                  <h3>`l:` candidate list</h3>
+                  <p>Comma-separated names. Use it to preload the wheel from a link.</p>
+                  <code>l:alice,bob,carol</code>
+                </div>
+
+                <div className={styles.helpCard}>
+                  <h3>`m:` mode</h3>
+                  <p>`0` picks one winner. `1` eliminates names until one remains.</p>
+                  <code>m:1</code>
+                </div>
+
+                <div className={styles.helpCard}>
+                  <h3>`a:1` auto-start</h3>
+                  <p>Starts the wheel immediately after the page opens.</p>
+                  <code>a:1</code>
+                </div>
+
+                <div className={styles.helpCard}>
+                  <h3>`r:` random seed</h3>
+                  <p>Integer-only seed for reproducible results with the same list and mode.</p>
+                  <code>r:42</code>
+                </div>
+
+                <div className={styles.helpCard}>
+                  <h3>`s:` speed</h3>
+                  <p>Wheel speed multiplier. Higher is faster, lower is slower.</p>
+                  <code>s:1.5</code>
+                </div>
+
+                <div className={styles.helpCard}>
+                  <h3>`name*rate` weights</h3>
+                  <p>Boost or reduce a candidate chance by adding a rate after the name.</p>
+                  <code>alice*1.2,bob,carol</code>
+                </div>
+              </div>
+
+              <p className={styles.helpNote}>Parameters are separated with `;`. Candidate names inside `l:` are separated with `,`.</p>
             </div>
           </section>
         </div>
